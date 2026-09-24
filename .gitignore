@@ -1,0 +1,26 @@
+# Секреты
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Базы и данные
+*.db
+*.sqlite
+*.sqlite3
+downloads/
+logs/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+docs/
+docs/
