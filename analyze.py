@@ -58,39 +58,65 @@ D перепродажа металла:
 """
 
 
+MAX_DOC_CHARS = 12000
+
+
+class AnalyzeError(Exception):
+    """Яндекс не ответил или ключ/ответ битый — не писать это в analiz.txt."""
+
+
+def _clip_text(text: str) -> str:
+    text = text or ''
+    if len(text) <= MAX_DOC_CHARS:
+        return text
+    return (
+        text[:MAX_DOC_CHARS]
+        + '\n\n[текст обрезан: в закупке слишком много документов]'
+    )
+
+
 def analyze_tender(text: str) -> str:
-    """Разбираем текст закупки."""
+    """Разбираем текст закупки. При сбое сети/ключа кидает AnalyzeError."""
     api_key = os.getenv('YANDEX_API_KEY')
     folder_id = os.getenv('YANDEX_FOLDER_ID')
     if not api_key or not folder_id:
-        return 'Нет ключа Яндекса в .env'
+        raise AnalyzeError('Нет ключа Яндекса в .env')
 
     headers = {
         'Authorization': 'Api-Key ' + api_key,
         'Content-Type': 'application/json',
     }
     model_uri = 'gpt://' + folder_id + '/yandexgpt-lite/latest'
-    completion_options = {
-        'stream': False,
-        'temperature': 0.2,
-        'maxTokens': '2000',
-    }
     payload = {
         'modelUri': model_uri,
-        'completionOptions': completion_options,
+        'completionOptions': {
+            'stream': False,
+            'temperature': 0.2,
+            'maxTokens': '2000',
+        },
         'messages': [
             {'role': 'system', 'text': PROMPT},
-            {'role': 'user', 'text': text},
+            {'role': 'user', 'text': _clip_text(text)},
         ],
     }
-    response = requests.post(url_yandex, headers=headers, json=payload, timeout=60)
+    try:
+        response = requests.post(
+            url_yandex,
+            headers=headers,
+            json=payload,
+            timeout=60,
+        )
+    except requests.RequestException as error:
+        raise AnalyzeError(f'Яндекс не ответил: {error}') from error
+
     if response.status_code != 200:
-        return 'Яндекс ошибка: ' + response.text[:300]
+        raise AnalyzeError(
+            'Яндекс вернул ошибку, анализ не готов. Попробуй позже.'
+        )
 
-    data = response.json()
-    return data['result']['alternatives'][0]['message']['text']
-
-
-
-   
+    try:
+        data = response.json()
+        return data['result']['alternatives'][0]['message']['text']
+    except (ValueError, KeyError, IndexError, TypeError) as error:
+        raise AnalyzeError('Яндекс прислал странный ответ') from error
 
