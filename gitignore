@@ -1,0 +1,5 @@
+.env
+tenders.db
+__pycache__/
+docs/
+*.pyc

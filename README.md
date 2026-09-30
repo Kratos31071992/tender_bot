@@ -82,13 +82,15 @@ cd ~/Python_BOT/tender_bot
 python3 -m pip install -r requirements.txt
 ```
 
-Файл `.env` рядом с `bot.py` (ключи в чат и в git не класть):
+Шаблон имён лежит в `.env.example`. Скопируй его в `.env` рядом с `bot.py` и впиши свои значения (ключи в чат и в git не класть):
 
 ```
-BOT_TOKEN=...
-YANDEX_API_KEY=...
-YANDEX_FOLDER_ID=...
+BOT_TOKEN=
+YANDEX_API_KEY=
+YANDEX_FOLDER_ID=
 ```
+
+Без `YANDEX_API_KEY` и `YANDEX_FOLDER_ID` анализ ответит «Нет ключа Яндекса в .env» — названия те же, что в шаблоне.
 
 ```bash
 python3 bot.py

@@ -212,15 +212,28 @@ async def watch_loop(user_id: int, chat_id: int, query: str) -> None:
             await asyncio.sleep(REFRESH_SECONDS)
             try:
                 rows = await asyncio.to_thread(search_bidzaar, query)
+                shown = await send_new_cards(chat_id, user_id, rows)
             except ConnectionError:
-                await bot.send_message(chat_id, 'Обновление: Bidzaar не ответил.')
+                try:
+                    await bot.send_message(
+                        chat_id, 'Обновление: Bidzaar не ответил.'
+                    )
+                except Exception:
+                    logger.exception('watch_loop: не смог написать про Bidzaar')
                 continue
-            shown = await send_new_cards(chat_id, user_id, rows)
-            if shown:
-                await bot.send_message(
-                    chat_id,
-                    f'Обновление по «{query}»: новых {shown}.',
+            except Exception:
+                logger.exception(
+                    'watch_loop: сбой обновления по «%s»', query
                 )
+                continue
+            if shown:
+                try:
+                    await bot.send_message(
+                        chat_id,
+                        f'Обновление по «{query}»: новых {shown}.',
+                    )
+                except Exception:
+                    logger.exception('watch_loop: не смог отправить счётчик')
     except asyncio.CancelledError:
         return
 
